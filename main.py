@@ -1,77 +1,77 @@
 # main.py
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import List
 import logging
 
-# --- Pydantic Modelleri (API'nin ne tür veri alıp vereceğini tanımlar) ---
+# --- Güvenlik Ayarları ---
+security = HTTPBearer()
+GIZLI_TOKEN = "furkan123"  # Bu bizim API şifremiz
 
-# UI'dan (Arayüzden) yeni plan oluşturmak için gelecek olan veri
+def token_dogrula(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Kullanıcının gönderdiği token'ı kontrol eder.
+    """
+    token = credentials.credentials
+    if token != GIZLI_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Geçersiz Token! Giriş izniniz yok."
+        )
+    return token
+
+# --- Pydantic Modelleri ---
 class PlanCreate(BaseModel):
     mesaj: str
-    saat: str  # Örn: "20:00"
+    saat: str
 
-# Kullanıcıya cevap olarak döneceğimiz veri (ID'si ile birlikte)
 class Plan(BaseModel):
     id: int
     mesaj: str
     saat: str
 
 # --- Sanal Veritabanı ---
-# Gerçek bir veritabanı kurmakla uğraşmıyoruz.
-# Planları bu listede tutacağız.
-db_planlar: List[Plan] = []
-mevcut_id = 0
+db_planlar: List[Plan] = [
+    Plan(id=1, mesaj="Varsayılan Plan", saat="09:00")
+]
+mevcut_id = 1
 
 # --- FastAPI Uygulaması ---
-app = FastAPI(
-    title="Günlük Plan Takip Uygulaması API",
-    description="Sequence diyagramına dayalı basit planlama API'si. Bu dokümantasyon (Swagger) FastAPI tarafından otomatik olarak oluşturulmuştur.",
-    version="1.0.0"
+app = FastAPI(title="Günlük Plan API (Güvenlikli)")
+
+# CORS Ayarları (Frontend'in Backend ile konuşabilmesi için şart)
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Her yerden gelen isteği kabul et (Test için)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# --- API Endpointleri (Uç Noktalar) ---
+# --- Endpointler ---
 
-@app.post("/planlar/", response_model=Plan, status_code=201)
-def plan_olustur(plan_data: PlanCreate):
-    """
-    Sequence Diyagramı: UI ->> Backend
-    
-    Yeni bir plan ve bildirim kaydı oluşturur.
-    - **mesaj**: Bildirim metni (örn: "Ders çalış")
-    - **saat**: Bildirim saati (örn: "21:30")
-    """
-    global mevcut_id
-    
-    # 1. Adım: Planı kaydet (Diyagramdaki 'Backend ->> DB')
-    mevcut_id += 1
-    yeni_plan = Plan(id=mevcut_id, mesaj=plan_data.mesaj, saat=plan_data.saat)
-    db_planlar.append(yeni_plan)
-    
-    print(f"VERİTABANI (Sanal): Plan kaydedildi -> {yeni_plan.dict()}")
+# 1. HERKESİN Erişebileceği Açık Endpoint
+@app.get("/")
+def ana_sayfa():
+    return {"mesaj": "Hoşgeldiniz! Planları görmek için yetkili olmalısınız."}
 
-    # 2. Adım: Bildirimi planla (Diyagramdaki 'Backend ->> Notification')
-    # Gerçek bir bildirim servisi yok, bu yüzden konsola yazdırıyoruz.
-    logging.info(f"BİLDİRİM SERVİSİ (Sanal): '{yeni_plan.mesaj}' için {yeni_plan.saat} saatine bildirim planlandı.")
-    
-    # 3. Adım: UI'a cevap dön (Diyagramdaki 'Backend -->> UI')
-    return yeni_plan
-
+# 2. SADECE ŞİFRESİ OLANIN Erişebileceği Endpoint (Kilitli)
 @app.get("/planlar/", response_model=List[Plan])
-def tum_planlari_getir():
+def planlari_listele(token: str = Depends(token_dogrula)):
     """
-    Kaydedilen tüm planları listeler. (Ödevde zorunlu değil ama test için faydalı)
+    Bu endpoint kilitlidir. Sadece doğru Bearer Token gönderenler görebilir.
     """
     return db_planlar
 
-@app.get("/planlar/{plan_id}", response_model=Plan)
-def plani_getir(plan_id: int):
+@app.post("/planlar/", response_model=Plan)
+def plan_olustur(plan_data: PlanCreate, token: str = Depends(token_dogrula)):
     """
-    ID'ye göre tek bir planı getirir.
+    Plan eklemek için de şifre gerekir.
     """
-    for plan in db_planlar:
-        if plan.id == plan_id:
-            return plan
-    # Bulamazsa 404 hatası döner
-    raise HTTPException(status_code=404, detail="Plan bulunamadı")
+    global mevcut_id
+    mevcut_id += 1
+    yeni_plan = Plan(id=mevcut_id, mesaj=plan_data.mesaj, saat=plan_data.saat)
+    db_planlar.append(yeni_plan)
+    return yeni_plan

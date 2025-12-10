@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Planlayıcı Arayüzü</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f0f0f0; }
+        .container { background: white; padding: 20px; border-radius: 8px; max-width: 500px; margin: 0 auto; }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #sonuc { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Günlük Planlarım</h2>
+    
+    <label>API Token (Şifre):</label>
+    <input type="text" id="tokenInput" placeholder="Örn: furkan123" value="furkan123">
+
+    <button onclick="verileriGetir()">Planları Getir</button>
+
+    <div id="sonuc">Veriler burada görünecek...</div>
+</div>
+
+<script>
+    async function verileriGetir() {
+        const token = document.getElementById('tokenInput').value;
+        const sonucDiv = document.getElementById('sonuc');
+        
+        try {
+            // Backend'e istek atıyoruz (Docker Compose ile 8000 portunda olacak)
+            const response = await fetch('http://localhost:8000/planlar/', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token, // Şifreyi header'a ekliyoruz
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.status === 403) {
+                sonucDiv.innerHTML = '<p class="error">HATA: Yetkisiz Giriş! Token yanlış.</p>';
+                return;
+            }
+
+            const data = await response.json();
+            
+            // Gelen veriyi ekrana yaz
+            let html = '<ul>';
+            data.forEach(plan => {
+                html += `<li><b>${plan.saat}:</b> ${plan.mesaj}</li>`;
+            });
+            html += '</ul>';
+            sonucDiv.innerHTML = html;
+
+        } catch (error) {
+            sonucDiv.innerHTML = '<p class="error">Bağlantı Hatası: Backend çalışmıyor olabilir.</p>';
+            console.error(error);
+        }
+    }
+</script>
+
+</body>
+</html>

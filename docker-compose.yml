@@ -1,6 +1,14 @@
 services:
-  gunluk-plan-app:
+  # Servis 1: Backend (Senin Python API)
+  backend-api:
     build: .
     ports:
       - "8000:8000"
+    restart: always
+
+  # Servis 2: Frontend (Web Arayüzü)
+  frontend-ui:
+    build: ./frontend
+    ports:
+      - "8080:80"  # Tarayıcıdan 8080'e gidince bu servise bağlanacağız
     restart: always
