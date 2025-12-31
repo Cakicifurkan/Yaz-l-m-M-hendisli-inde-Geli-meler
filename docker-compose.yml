@@ -1,14 +1,31 @@
 services:
-  # Servis 1: Backend (Senin Python API)
+  # Veritabanı Servisi
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: furkan_user
+      POSTGRES_PASSWORD: furkan_password
+      POSTGRES_DB: plan_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Veriler konteyner silinse de gitmez
+
+  # Senin Backend Servisin
   backend-api:
     build: .
     ports:
       - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://furkan_user:furkan_password@db:5432/plan_db
     restart: always
 
-  # Servis 2: Frontend (Web Arayüzü)
   frontend-ui:
     build: ./frontend
     ports:
-      - "8080:80"  # Tarayıcıdan 8080'e gidince bu servise bağlanacağız
+      - "8080:80"
     restart: always
+
+volumes:
+  postgres_data:
