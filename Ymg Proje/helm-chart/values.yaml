@@ -1,0 +1,14 @@
+replicaCount: 1
+
+image:
+  repository: plan-master-backend
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: NodePort
+  port: 8000
+  targetPort: 8000
+
+env:
+  databaseUrl: "postgresql://furkan_user:furkan_password@db:5432/plan_db"
