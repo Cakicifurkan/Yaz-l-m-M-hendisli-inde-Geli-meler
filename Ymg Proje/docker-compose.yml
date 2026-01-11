@@ -1,0 +1,32 @@
+services:
+  # Veritabanı
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: furkan_user
+      POSTGRES_PASSWORD: furkan_password
+      POSTGRES_DB: plan_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Backend (Python/FastAPI)
+  backend-api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://furkan_user:furkan_password@db:5432/plan_db
+    restart: always
+
+  # Frontend (HTML/Nginx)
+  frontend-ui:
+    build: ./frontend  # 'frontend' klasöründeki Dockerfile'ı kullanır
+    ports:
+      - "8080:80"      # Tarayıcıda 8080'den erişirsin
+    restart: always
+
+volumes:
+  postgres_data:

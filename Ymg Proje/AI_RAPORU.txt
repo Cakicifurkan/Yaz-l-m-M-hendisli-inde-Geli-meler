@@ -1,0 +1,16 @@
+*** PROJE GÜVENLİK VE İYİLEŞTİRME RAPORU ***
+
+1. Hassas Veri Yönetimi (.env):
+   Veritabanı şifreleri ve API anahtarları kod içinde değil, çevresel değişkenlerde (.env dosyası) saklanmalıdır.
+
+2. Token Altyapısı (JWT):
+   Sabit şifre yerine, her oturum için süreli ve benzersiz JWT (JSON Web Token) üretilmelidir.
+
+3. Rate Limiting (Hız Sınırı):
+   API'ye yapılan istekler IP bazlı sınırlandırılmalıdır (Örn: Dakikada maks 60 istek).
+
+4. HTTPS Kullanımı:
+   Veri trafiği şifrelenmeli, prodüksiyon ortamında SSL sertifikası kullanılmalıdır.
+
+5. Girdi Doğrulama (Input Validation):
+   Kullanıcıdan gelen veri tipleri (özellikle saat formatı) Pydantic ile daha sıkı kontrol edilmelidir.
