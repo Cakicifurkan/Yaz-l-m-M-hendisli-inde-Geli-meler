@@ -1,6 +1,0 @@
-apiVersion: v2
-name: plan-master-pro
-description: Gunluk Plan Uygulamasi icin Helm Semasi
-type: application
-version: 0.1.0
-appVersion: "1.0.0"
